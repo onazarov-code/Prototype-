@@ -1,0 +1,311 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>[hidden]{display:none!important}body{margin:0}</style></head><body><title>Legenda Towers 3D · BINO</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="app/fonts.css">
+<style>
+/* Layout: full-bleed 3D stage; slim top bar; one contextual glass panel (right on desktop, bottom sheet on phones); view switch bottom-centre. */
+:root {
+  --night: #0f1828;        /* stage + panels */
+  --ink: #1b2a41;          /* raised surfaces */
+  --amber: #f2b84b;        /* selection + lit windows */
+  --stone: #ede6da;        /* primary text */
+  --mist: #9fb0c3;         /* secondary text */
+  --line: rgba(237, 230, 218, 0.14);
+  --glass: rgba(15, 24, 40, 0.78);
+  --ok: #8fcf9a; --held: #f2b84b; --sold: #8b95a3;
+  --f-display: "Lora", Georgia, "Times New Roman", serif;
+  --f-ui: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body { background: var(--night); color: var(--stone); font-family: var(--f-ui); font-size: 14px; overflow: hidden; }
+#stage { position: fixed; inset: 0; }
+#stage canvas { display: block; width: 100%; height: 100%; touch-action: none; outline: none; }
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+
+/* top bar */
+.topbar { position: fixed; top: 0; left: 0; right: 0; z-index: 20; display: flex; align-items: center; gap: 16px;
+  padding: calc(10px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) 10px max(16px, env(safe-area-inset-left, 0px));
+  background: linear-gradient(to bottom, rgba(15,24,40,.86), rgba(15,24,40,0)); pointer-events: none; }
+.topbar > * { pointer-events: auto; }
+.brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.brand-logo { height: 22px; width: auto; flex: none; }
+.brand-txt { display: flex; flex-direction: column; min-width: 0; }
+.brand-txt b { font-family: var(--f-display); font-weight: 600; font-size: 18px; letter-spacing: .2px; white-space: nowrap; }
+.brand-txt span { color: var(--mist); font-size: 11.5px; letter-spacing: .6px; text-transform: uppercase; white-space: nowrap; }
+.crumbs { flex: 1; display: flex; justify-content: center; gap: 6px; flex-wrap: wrap; min-width: 0; }
+.crumbs button { background: none; border: 0; padding: 4px 6px; color: var(--mist); border-radius: 6px; font-size: 13px; }
+.crumbs button[aria-current="true"] { color: var(--stone); font-weight: 600; }
+.crumbs i { color: var(--line); font-style: normal; align-self: center; }
+.tools { display: flex; gap: 8px; align-items: center; }
+.seg { display: inline-flex; background: rgba(27,42,65,.85); border: 1px solid var(--line); border-radius: 999px; padding: 3px; }
+.seg button { background: none; border: 0; border-radius: 999px; padding: 6px 12px; font-size: 12.5px; color: var(--mist); white-space: nowrap; }
+.seg button[aria-pressed="true"] { background: var(--stone); color: var(--night); font-weight: 600; }
+.seg button:disabled { opacity: .35; cursor: default; }
+.iconbtn { width: 34px; height: 34px; border-radius: 999px; background: rgba(27,42,65,.85); border: 1px solid var(--line); display: grid; place-items: center; }
+.iconbtn svg { width: 16px; height: 16px; }
+
+/* back */
+#back { position: fixed; z-index: 19; left: max(16px, env(safe-area-inset-left, 0px)); top: calc(64px + env(safe-area-inset-top, 0px));
+  display: inline-flex; align-items: center; gap: 8px; padding: 9px 14px 9px 10px; border-radius: 999px;
+  background: var(--stone); color: var(--night); border: 0; font-weight: 600; box-shadow: 0 6px 20px rgba(0,0,0,.25); }
+#back svg { width: 16px; height: 16px; }
+
+/* panel */
+#panel { position: fixed; z-index: 18; right: max(16px, env(safe-area-inset-right, 0px)); top: calc(64px + env(safe-area-inset-top, 0px));
+  bottom: calc(84px + env(safe-area-inset-bottom, 0px)); width: 340px; overflow: auto; background: var(--glass); backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px); border: 1px solid var(--line); border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+#panel h2 { font-family: var(--f-display); font-weight: 600; font-size: 24px; margin: 0; text-wrap: balance; }
+#panel h3 { font-size: 11.5px; letter-spacing: .8px; text-transform: uppercase; color: var(--mist); margin: 4px 0 0; font-weight: 600; }
+#panel p { margin: 0; color: var(--mist); line-height: 1.5; }
+.facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.fact { background: rgba(27,42,65,.7); border-radius: 10px; padding: 10px; }
+.fact b { display: block; font-size: 18px; font-variant-numeric: tabular-nums; }
+.fact span { color: var(--mist); font-size: 11.5px; }
+.list { display: flex; flex-direction: column; gap: 6px; }
+.row { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; background: rgba(27,42,65,.55);
+  border: 1px solid transparent; border-radius: 10px; padding: 10px 12px; }
+.row:hover, .row.hot { border-color: var(--amber); background: rgba(242,184,75,.10); }
+.row .id { font-weight: 600; font-variant-numeric: tabular-nums; min-width: 64px; }
+.row .meta { color: var(--mist); font-size: 12.5px; flex: 1; min-width: 0; }
+.row .num { font-variant-numeric: tabular-nums; color: var(--stone); font-size: 12.5px; }
+.dot { width: 8px; height: 8px; border-radius: 99px; flex: none; }
+.dot.ok { background: var(--ok); } .dot.held { background: var(--held); } .dot.sold { background: var(--sold); }
+.floors { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.floors button { background: rgba(27,42,65,.55); border: 1px solid transparent; border-radius: 8px; padding: 9px 0; font-variant-numeric: tabular-nums; font-weight: 600; }
+.floors button small { display: block; font-weight: 400; color: var(--mist); font-size: 10.5px; }
+.floors button:hover, .floors button.hot { border-color: var(--amber); }
+.floors button.wide { grid-column: span 2; }
+.cta { background: var(--amber); color: var(--night); border: 0; border-radius: 12px; padding: 12px; font-weight: 600; }
+.cta.ghost { background: none; color: var(--stone); border: 1px solid var(--line); }
+.cta-row { display: flex; gap: 8px; } .cta-row .cta { flex: 1; }
+.note { font-size: 11.5px; color: var(--mist); border-top: 1px solid var(--line); padding-top: 10px; line-height: 1.5; }
+.legend { display: flex; gap: 12px; flex-wrap: wrap; color: var(--mist); font-size: 12px; }
+.legend span { display: inline-flex; gap: 6px; align-items: center; }
+.towers { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.tower-card { background: rgba(27,42,65,.6); border: 1px solid transparent; border-radius: 12px; padding: 14px; text-align: left; display: flex; flex-direction: column; gap: 4px; }
+.tower-card:hover, .tower-card.hot { border-color: var(--amber); }
+.tower-card b { font-family: var(--f-display); font-size: 20px; }
+.tower-card span { color: var(--mist); font-size: 12px; }
+
+/* bottom */
+#views { position: fixed; z-index: 18; left: 50%; transform: translateX(-50%); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); }
+#views .seg { box-shadow: 0 8px 24px rgba(0,0,0,.3); }
+#views .seg button { padding: 9px 16px; font-size: 13px; }
+.disclaimer { position: fixed; z-index: 17; left: max(16px, env(safe-area-inset-left, 0px)); bottom: calc(22px + env(safe-area-inset-bottom, 0px));
+  font-size: 11px; color: var(--mist); max-width: 280px; line-height: 1.4; opacity: .85; }
+
+/* overlays */
+#labels { position: fixed; inset: 0; pointer-events: none; z-index: 15; }
+.lbl { position: absolute; transform: translate(-50%, -50%); white-space: nowrap; text-align: center; font-size: 11.5px; color: var(--stone);
+  text-shadow: 0 1px 3px rgba(0,0,0,.7); }
+.lbl small { display: block; color: #d7cdb9; font-size: 10.5px; }
+.lbl.tower { font-family: var(--f-display); font-size: 22px; font-weight: 600; background: rgba(15,24,40,.7); border: 1px solid var(--line);
+  border-radius: 999px; padding: 6px 14px; text-shadow: none; }
+#tip { position: fixed; z-index: 30; pointer-events: none; background: var(--stone); color: var(--night); border-radius: 10px; padding: 8px 11px;
+  font-size: 12.5px; line-height: 1.35; box-shadow: 0 8px 24px rgba(0,0,0,.3); transform: translate(14px, 14px); }
+#tip b { font-size: 14px; }
+#loader { position: fixed; inset: 0; z-index: 50; background: var(--night); display: grid; place-items: center; transition: opacity .6s; }
+#loader .box { display: flex; flex-direction: column; align-items: center; gap: 18px; padding: 24px; text-align: center; }
+#loader .brand-logo { height: 40px; }
+#loader h1 { font-family: var(--f-display); font-weight: 600; font-size: 28px; margin: 0; }
+#loader .bar { width: 220px; height: 3px; background: var(--ink); border-radius: 3px; overflow: hidden; }
+#loader .bar i { display: block; height: 100%; width: 0; background: var(--amber); transition: width .2s; }
+#loader p { color: var(--mist); margin: 0; font-size: 12.5px; }
+#toast { position: fixed; z-index: 40; left: 50%; transform: translateX(-50%); top: calc(70px + env(safe-area-inset-top, 0px));
+  background: var(--stone); color: var(--night); padding: 10px 14px; border-radius: 10px; font-size: 13px; max-width: min(520px, 90vw); box-shadow: 0 8px 24px rgba(0,0,0,.3); }
+#walkhelp { position: fixed; z-index: 18; left: 50%; transform: translateX(-50%); bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+  background: var(--glass); border: 1px solid var(--line); border-radius: 999px; padding: 8px 16px; font-size: 12.5px; color: var(--mist); white-space: nowrap; }
+#cross { position: fixed; z-index: 16; left: 50%; top: 50%; width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 99px; background: rgba(237,230,218,.6); pointer-events: none; }
+
+@media (max-width: 760px) {
+  .brand-txt, .crumbs { display: none; }
+  #panel { top: auto; left: max(10px, env(safe-area-inset-left, 0px)); right: max(10px, env(safe-area-inset-right, 0px)); width: auto;
+    bottom: calc(70px + env(safe-area-inset-bottom, 0px)); max-height: 42vh; padding: 14px; border-radius: 14px; }
+  #panel h2 { font-size: 20px; }
+  .disclaimer { display: none; }
+  #views .seg button { padding: 8px 10px; font-size: 12px; }
+  #walkhelp { display: none; }
+  .tools .seg button { padding: 6px 9px; }
+}
+@media (prefers-reduced-motion: reduce) { #loader { transition: none; } }
+
+/* ---------- BINO website upgrade (Nov 2026) ---------- */
+#loader.poster { background: linear-gradient(rgba(10,16,28,.72), rgba(10,16,28,.86)), var(--night); }
+#loader .alt { color: var(--mist); font-size: 12px; text-decoration: underline; text-underline-offset: 3px; }
+#panel { width: 330px; }
+.price-tag { font-family: var(--f-display); font-size: 19px; color: #ffd27a; }
+.mini-links { display: flex; gap: 8px; flex-wrap: wrap; }
+.mini-links button, .mini-links a { background: rgba(27,42,65,.6); border: 1px solid var(--line); border-radius: 999px; padding: 7px 12px; font-size: 12.5px; color: var(--stone); text-decoration: none; }
+.mini-links button:hover, .mini-links a:hover { border-color: var(--amber); }
+.sheet { position: fixed; inset: 0; z-index: 60; background: rgba(5,9,18,.62); backdrop-filter: blur(4px); display: grid; place-items: center; padding: 16px; }
+.sheet-card { position: relative; width: min(440px, 100%); max-height: calc(100vh - 32px); overflow: auto; background: #111b2d; border: 1px solid var(--line); border-radius: 18px; padding: 22px; box-shadow: 0 30px 60px rgba(0,0,0,.45); }
+.sheet-card.film { width: min(1100px, 100%); padding: 0; overflow: hidden; background: #000; }
+.sheet-card.film video { display: block; width: 100%; max-height: 80vh; }
+.sheet-x { position: absolute; right: 10px; top: 8px; z-index: 2; width: 34px; height: 34px; border-radius: 99px; border: 1px solid var(--line); background: rgba(15,24,40,.8); font-size: 20px; line-height: 1; }
+.sheet-eyebrow { margin: 0 0 4px; color: var(--amber); font-size: 11px; letter-spacing: 1.6px; text-transform: uppercase; }
+.sheet h2 { font-family: var(--f-display); font-weight: 600; font-size: 24px; margin: 0 0 14px; }
+.sheet form { display: flex; flex-direction: column; gap: 10px; }
+.sheet label { display: flex; flex-direction: column; gap: 5px; font-size: 12px; color: var(--mist); }
+.sheet input, .sheet textarea { font: inherit; font-size: 15px; color: var(--stone); background: rgba(27,42,65,.7); border: 1px solid var(--line); border-radius: 10px; padding: 11px 12px; color-scheme: dark; }
+.sheet input:focus, .sheet textarea:focus { outline: 2px solid var(--amber); outline-offset: 0; }
+.sheet-note { font-size: 11.5px; color: var(--mist); margin: 2px 0; line-height: 1.45; }
+.sheet-err { color: #ffb4a8; font-size: 13px; margin: 0; }
+#inq-done h3 { font-family: var(--f-display); font-size: 22px; margin: 6px 0; }
+#inq-done p { color: var(--mist); margin: 0; }
+#walkpad { position: fixed; z-index: 19; right: max(14px, env(safe-area-inset-right, 0px)); bottom: calc(80px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 8px; }
+#walkpad button { width: 52px; height: 52px; border-radius: 99px; background: var(--glass); border: 1px solid var(--line); font-size: 18px; touch-action: none; user-select: none; -webkit-user-select: none; }
+#walkpad button:active { background: rgba(242,184,75,.3); }
+/* static fallback */
+#fallback { position: fixed; inset: 0; z-index: 45; overflow: auto; background: var(--night); }
+.fb-hero { position: relative; min-height: 58vh; display: flex; align-items: flex-end; background: linear-gradient(0deg, var(--night) 0%, rgba(15,24,40,0) 45%), var(--fbimg, none) center/cover no-repeat; padding: 90px max(16px, 5vw) 24px; }
+.fb-hero h1 { font-family: var(--f-display); font-weight: 600; font-size: clamp(30px, 5vw, 54px); margin: 0 0 6px; }
+.fb-hero p { color: var(--mist); margin: 0; max-width: 560px; }
+.fb-body { display: grid; grid-template-columns: 300px 1fr; gap: 20px; padding: 10px max(16px, 5vw) 120px; }
+.fb-card { background: var(--glass); border: 1px solid var(--line); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.fb-card select { font: inherit; color: var(--stone); background: rgba(27,42,65,.7); border: 1px solid var(--line); border-radius: 10px; padding: 10px; color-scheme: dark; }
+.fb-photos { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.fb-photos img, .fb-plan { width: 100%; border-radius: 10px; display: block; }
+.fb-plan { background: #fff; }
+@media (max-width: 760px) {
+  #panel { width: auto; }
+  .fb-body { grid-template-columns: 1fr; }
+  .sheet { align-items: end; padding: 0; }
+  .sheet-card { width: 100%; border-radius: 18px 18px 0 0; max-height: 88vh; }
+  .sheet-card.film { border-radius: 0; }
+  #walkhelp { display: block; white-space: normal; text-align: center; width: max-content; max-width: 90vw; bottom: calc(76px + 42vh); }
+}
+
+/* keep the 3D subject in the free area beside / above the panel; collapsible panel on phones */
+#panel-toggle { display: none; }
+@media (max-width: 760px) {
+  #panel { max-height: 36vh; transition: max-height .35s ease; }
+  body.panel-min #panel { max-height: 64px; overflow: hidden; }
+  #panel-toggle { display: grid; place-items: center; position: fixed; z-index: 19; left: 50%; transform: translateX(-50%); width: 64px; height: 22px;
+    top: 60vh; border-radius: 99px; background: var(--ink); border: 1px solid var(--line); }
+  #panel-toggle span { width: 26px; height: 4px; border-radius: 4px; background: var(--mist); }
+  #walkhelp { top: calc(112px + env(safe-area-inset-top, 0px)); bottom: auto; }
+  #panel { padding-top: 26px; }
+  #walkpad { top: 34%; bottom: auto; }
+}
+</style>
+
+<div id="stage" aria-label="3D view of Legenda Towers"></div>
+<div id="labels"></div>
+
+<header class="topbar">
+  <a class="brand" href="https://binotj.com" target="_blank" rel="noopener" title="BINO" style="color:inherit;text-decoration:none">
+    <svg xmlns="http://www.w3.org/2000/svg" class="brand-logo" aria-label="BINO" role="img" viewBox="220 150 716 352"><g transform="translate(200,494.0)"><path d="M130.2325581395349 3.5778175313059037C177.6386404293381 3.5778175313059037 212.88014311270126 -33.98926654740608 212.88014311270126 -99.64221824686942C212.88014311270126 -166.18962432915922 176.56529516994635 -202.50447227191415 130.4114490161002 -202.50447227191415C94.81216457960645 -202.50447227191415 80.14311270125224 -181.03756708407872 73.16636851520573 -166.9051878354204H71.19856887298748V-266.5474060822898H24.686940966010734V0.0H70.12522361359571V-31.663685152057248H73.16636851520573C80.32200357781754 -17.173524150268335 95.88550983899822 3.5778175313059037 130.2325581395349 3.5778175313059037ZM117.71019677996422 -34.704830053667266C87.29874776386404 -34.704830053667266 70.304114490161 -60.82289803220036 70.304114490161 -99.82110912343471C70.304114490161 -138.81932021466906 86.94096601073346 -164.22182468694098 117.71019677996422 -164.22182468694098C149.19499105545617 -164.22182468694098 165.11627906976744 -137.0304114490161 165.11627906976744 -99.82110912343471C165.11627906976744 -62.254025044722724 148.8372093023256 -34.704830053667266 117.71019677996422 -34.704830053667266Z" fill="#f6f4ec"/><path d="M246.51 0.00 L293.02 0.00 L293.02 -283.54 L246.51 -266.55 Z " fill="#f6f4ec" fill-rule="evenodd"/><path d="M259.03 -157.42 L280.50 -157.42 L280.50 -193.20 L259.03 -193.20 Z" fill="#c7e07a"/><circle cx="269.77" cy="-315.74" r="23.61" fill="#f6f4ec"/><path d="M378.175313059034 -117.17352415026834C378.175313059034 -146.15384615384616 396.0644007155635 -162.9695885509839 420.93023255813955 -162.9695885509839C445.2593917710197 -162.9695885509839 459.9284436493739 -146.86940966010735 459.9284436493739 -120.03577817531307V0.0H506.44007155635063V-127.19141323792488C506.44007155635063 -175.31305903398928 479.2486583184258 -202.50447227191415 438.1037567084079 -202.50447227191415C408.76565295169945 -202.50447227191415 388.01431127012523 -188.19320214669054 376.20751341681574 -160.1073345259392L375.67084078711986 -200.0H331.66368515205727V0.0H378.175313059034Z" fill="#f6f4ec"/><path d="M635.7781753130591 4.114490161001789C694.0966010733453 4.114490161001789 731.484794275492 -37.388193202146695 731.484794275492 -98.92665474060823C731.484794275492 -161.18067978533097 694.0966010733453 -202.50447227191415 635.7781753130591 -202.50447227191415C577.4597495527729 -202.50447227191415 540.2504472271914 -161.18067978533097 540.2504472271914 -98.92665474060823C540.2504472271914 -37.388193202146695 577.4597495527729 4.114490161001789 635.7781753130591 4.114490161001789ZM635.7781753130591 -33.631484794275494C603.3989266547406 -33.631484794275494 587.6565295169947 -62.61180679785331 587.6565295169947 -99.10554561717353C587.6565295169947 -135.95706618962433 603.3989266547406 -164.75849731663686 635.7781753130591 -164.75849731663686C668.3363148479428 -164.75849731663686 684.2576028622541 -135.95706618962433 684.2576028622541 -99.10554561717353C684.2576028622541 -62.61180679785331 668.3363148479428 -33.631484794275494 635.7781753130591 -33.631484794275494Z" fill="#f6f4ec"/></g></svg>
+    <div class="brand-txt"><b>Legenda Towers</b><span data-i18n="addr">Dushanbe · Shamsi 18</span></div>
+  </a>
+  <nav class="crumbs" id="crumbs" aria-label="Selection"></nav>
+  <div class="tools">
+    <div class="seg" role="group" aria-label="Language">
+      <button id="lang-ru" aria-pressed="true">RU</button><button id="lang-tg" aria-pressed="false">TJ</button><button id="lang-en" aria-pressed="false">EN</button>
+    </div>
+    <div class="seg" role="group" aria-label="Lighting">
+      <button id="day" aria-pressed="true" data-i18n="day">Day</button><button id="eve" aria-pressed="false" data-i18n="evening">Evening</button>
+    </div>
+    <button class="iconbtn" id="reset" title="Reset view" aria-label="Reset view">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+    </button>
+  </div>
+</header>
+
+<button id="back" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg><span id="back-txt">Back</span></button>
+
+<aside id="panel" aria-live="polite"></aside>
+<button id="panel-toggle" aria-label="Show / hide details"><span></span></button>
+
+<div id="views">
+  <div class="seg" role="group" aria-label="View">
+    <button id="v-ext" aria-pressed="true" data-i18n="v_ext">Exterior</button>
+    <button id="v-plan" aria-pressed="false" data-i18n="v_plan" disabled>Floor plan</button>
+    <button id="v-doll" aria-pressed="false" data-i18n="v_doll" disabled>Dollhouse</button>
+    <button id="v-walk" aria-pressed="false" data-i18n="v_walk" disabled>Walkthrough</button>
+  </div>
+</div>
+
+<div class="disclaimer" data-i18n="disclaimer">Independent concept by BINO · not affiliated with the developer · all dimensions and areas estimated · layouts are proposals.</div>
+<div id="tip" hidden></div>
+<div id="toast" hidden></div>
+<div id="walkhelp" hidden>Drag to look · W A S D or arrows to move · click the floor to walk there</div>
+<div id="cross" hidden></div>
+<div id="walkpad" hidden><button id="wp-fwd" aria-label="Forward">▲</button><button id="wp-back" aria-label="Backward">▼</button></div>
+
+<!-- inquiry: posts to the BINO site's existing /api/inquiries flow -->
+<div id="inq" class="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="inq-title">
+  <div class="sheet-card">
+    <button class="sheet-x" id="inq-x" aria-label="Close">×</button>
+    <p class="sheet-eyebrow" id="inq-apt"></p>
+    <h2 id="inq-title"></h2>
+    <form id="inq-form" novalidate>
+      <label><span id="l-name"></span><input name="name" required maxlength="100" autocomplete="name"></label>
+      <label><span id="l-phone"></span><input name="phone" type="tel" required maxlength="40" autocomplete="tel" placeholder="+992"></label>
+      <label><span id="l-email"></span><input name="email" type="email" maxlength="254" autocomplete="email"></label>
+      <label><span id="l-visit"></span><input name="appointment" type="datetime-local"></label>
+      <label><span id="l-msg"></span><textarea name="message" maxlength="2000" rows="3"></textarea></label>
+      <p class="sheet-note" id="inq-privacy"></p>
+      <p class="sheet-err" id="inq-err" hidden></p>
+      <button class="cta" type="submit" id="inq-send"></button>
+    </form>
+    <div id="inq-done" hidden><h3 id="inq-ok"></h3><p id="inq-okp"></p></div>
+  </div>
+</div>
+
+<!-- optional promotional film (Kling); navigation itself is always real 3D -->
+<div id="promo" class="sheet" hidden role="dialog" aria-modal="true">
+  <div class="sheet-card film"><button class="sheet-x" id="promo-x" aria-label="Close">×</button><video id="promo-v" controls playsinline preload="none"></video></div>
+</div>
+
+<!-- static fallback when WebGL is not available (or ?static=1) -->
+<section id="fallback" hidden></section>
+
+<div id="loader" class="poster">
+  <div class="box">
+    <svg xmlns="http://www.w3.org/2000/svg" class="brand-logo" aria-label="BINO" role="img" viewBox="220 150 716 352"><g transform="translate(200,494.0)"><path d="M130.2325581395349 3.5778175313059037C177.6386404293381 3.5778175313059037 212.88014311270126 -33.98926654740608 212.88014311270126 -99.64221824686942C212.88014311270126 -166.18962432915922 176.56529516994635 -202.50447227191415 130.4114490161002 -202.50447227191415C94.81216457960645 -202.50447227191415 80.14311270125224 -181.03756708407872 73.16636851520573 -166.9051878354204H71.19856887298748V-266.5474060822898H24.686940966010734V0.0H70.12522361359571V-31.663685152057248H73.16636851520573C80.32200357781754 -17.173524150268335 95.88550983899822 3.5778175313059037 130.2325581395349 3.5778175313059037ZM117.71019677996422 -34.704830053667266C87.29874776386404 -34.704830053667266 70.304114490161 -60.82289803220036 70.304114490161 -99.82110912343471C70.304114490161 -138.81932021466906 86.94096601073346 -164.22182468694098 117.71019677996422 -164.22182468694098C149.19499105545617 -164.22182468694098 165.11627906976744 -137.0304114490161 165.11627906976744 -99.82110912343471C165.11627906976744 -62.254025044722724 148.8372093023256 -34.704830053667266 117.71019677996422 -34.704830053667266Z" fill="#f6f4ec"/><path d="M246.51 0.00 L293.02 0.00 L293.02 -283.54 L246.51 -266.55 Z " fill="#f6f4ec" fill-rule="evenodd"/><path d="M259.03 -157.42 L280.50 -157.42 L280.50 -193.20 L259.03 -193.20 Z" fill="#c7e07a"/><circle cx="269.77" cy="-315.74" r="23.61" fill="#f6f4ec"/><path d="M378.175313059034 -117.17352415026834C378.175313059034 -146.15384615384616 396.0644007155635 -162.9695885509839 420.93023255813955 -162.9695885509839C445.2593917710197 -162.9695885509839 459.9284436493739 -146.86940966010735 459.9284436493739 -120.03577817531307V0.0H506.44007155635063V-127.19141323792488C506.44007155635063 -175.31305903398928 479.2486583184258 -202.50447227191415 438.1037567084079 -202.50447227191415C408.76565295169945 -202.50447227191415 388.01431127012523 -188.19320214669054 376.20751341681574 -160.1073345259392L375.67084078711986 -200.0H331.66368515205727V0.0H378.175313059034Z" fill="#f6f4ec"/><path d="M635.7781753130591 4.114490161001789C694.0966010733453 4.114490161001789 731.484794275492 -37.388193202146695 731.484794275492 -98.92665474060823C731.484794275492 -161.18067978533097 694.0966010733453 -202.50447227191415 635.7781753130591 -202.50447227191415C577.4597495527729 -202.50447227191415 540.2504472271914 -161.18067978533097 540.2504472271914 -98.92665474060823C540.2504472271914 -37.388193202146695 577.4597495527729 4.114490161001789 635.7781753130591 4.114490161001789ZM635.7781753130591 -33.631484794275494C603.3989266547406 -33.631484794275494 587.6565295169947 -62.61180679785331 587.6565295169947 -99.10554561717353C587.6565295169947 -135.95706618962433 603.3989266547406 -164.75849731663686 635.7781753130591 -164.75849731663686C668.3363148479428 -164.75849731663686 684.2576028622541 -135.95706618962433 684.2576028622541 -99.10554561717353C684.2576028622541 -62.61180679785331 668.3363148479428 -33.631484794275494 635.7781753130591 -33.631484794275494Z" fill="#f6f4ec"/></g></svg>
+    <h1>Legenda Towers</h1>
+    <div class="bar"><i id="loadbar"></i></div>
+    <p id="loadtxt">Loading the 3D model…</p>
+    <a class="alt" id="static-link" href="?static=1"></a>
+  </div>
+</div>
+
+<script src="app/pack/modules.js"></script>
+<script>
+(function () {
+  var LX = window.__LX = {
+    store: {}, wait: {}, base: 'app/pack/',
+    file: function (n) { return n.replace(/[^A-Za-z0-9._-]/g, '_') + '.js'; },
+    put: function (n, v) { this.store[n] = v; var w = this.wait[n]; if (w) { delete this.wait[n]; w.res.forEach(function (f) { f(v); }); } },
+    drop: function (n) { delete this.store[n]; },
+    get: function (n) {
+      var self = this;
+      if (n in this.store) return Promise.resolve(this.store[n]);
+      return new Promise(function (res, rej) {
+        var w = self.wait[n];
+        if (!w) {
+          w = self.wait[n] = { res: [], rej: [] };
+          var s = document.createElement('script'); s.async = true; s.src = self.base + self.file(n);
+          s.onerror = function () { delete self.wait[n]; w.rej.forEach(function (f) { f(new Error('missing ' + n)); }); };
+          document.head.appendChild(s);
+        }
+        w.res.push(res); w.rej.push(rej);
+      });
+    }
+  };
+  var fail = function () { var t = document.getElementById('loadtxt'); if (t) t.textContent = 'This browser could not start the 3D viewer. Please open this file in Google Chrome (recommended), Microsoft Edge or Safari 16.4+.'; };
+  var M = window.__LX_MODS;
+  if (!M) { var t = document.getElementById('loadtxt'); if (t) t.textContent = 'The "app" folder is missing. Keep this file next to the "app" folder.'; return; }
+  try {
+    var map = { imports: {} };
+    for (var k in M) if (k !== 'app') map.imports[k] = URL.createObjectURL(new Blob([M[k]], { type: 'text/javascript' }));
+    var im = document.createElement('script'); im.type = 'importmap'; im.textContent = JSON.stringify(map); document.head.appendChild(im);
+    var app = document.createElement('script'); app.type = 'module'; app.onerror = fail;
+    app.src = URL.createObjectURL(new Blob([M.app], { type: 'text/javascript' }));
+    document.body.appendChild(app);
+    window.__LX_MODS = null;
+  } catch (e) { fail(); }
+})();
+</script>
+</body></html>
